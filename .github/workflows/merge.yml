@@ -18,14 +18,14 @@ jobs:
           test -f sources.txt || (echo "sources.txt missing" && exit 1)
           test -f groups.txt || (echo "groups.txt missing" && exit 1)
 
-      - name: Merge playlists (safe mode)
+      - name: Merge playlists
         run: |
           echo "#EXTM3U" > combined.m3u
 
           while read -r URL; do
             echo "Fetching $URL"
-            curl -s "$URL" | grep -E -B1 -f groups.txt >> combined.m3u
-          done < sources.txt
+            curl -s "$URL" | grep -E -f groups.txt || true
+          done < sources.txt >> combined.m3u
 
       - name: Commit result
         run: |
