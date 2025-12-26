@@ -1,4 +1,4 @@
-name: Merge & Filter IPTV Playlists
+name: Merge IPTV Playlists
 
 on:
   workflow_dispatch:
@@ -13,10 +13,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Verify input files
+      - name: Verify source file
         run: |
           test -f sources.txt || (echo "sources.txt missing" && exit 1)
-          test -f groups.txt || (echo "groups.txt missing" && exit 1)
 
       - name: Merge playlists
         run: |
@@ -24,10 +23,10 @@ jobs:
 
           while read -r URL; do
             echo "Fetching $URL" >&2
-            curl -s "$URL" | grep -E -f groups.txt >> combined.m3u || true
+            curl -s "$URL" >> combined.m3u
           done < sources.txt
 
-      - name: Commit result
+      - name: Commit merged playlist
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
