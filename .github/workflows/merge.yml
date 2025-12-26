@@ -10,23 +10,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate required files
+      - name: Verify input files
+        shell: bash
         run: |
-          test -f sources.txt || (echo "sources.txt missing" && exit 1)
-          test -f groups.txt || (echo "groups.txt missing" && exit 1)
+          test -f sources.txt || { echo "sources.txt missing"; exit 1; }
+          test -f groups.txt || { echo "groups.txt missing"; exit 1; }
 
       - name: Merge playlists
+        shell: bash
         run: |
+          set -e
           echo "#EXTM3U" > combined.m3u
+
           GROUPS=$(paste -sd "|" groups.txt)
 
-          while read -r url; do
+          while IFS= read -r url; do
             echo "Fetching $url"
             curl -s "$url" | awk -v groups="$GROUPS" '
-              BEGIN { keep=0 }
               /^#EXTINF/ {
                 keep = ($0 ~ "group-title=\"(" groups ")\"")
               }
@@ -35,6 +38,7 @@ jobs:
           done < sources.txt
 
       - name: Commit result
+        shell: bash
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
