@@ -13,7 +13,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Verify source file
+      - name: Verify source list
         run: |
           test -f sources.txt || (echo "sources.txt missing" && exit 1)
 
@@ -23,7 +23,7 @@ jobs:
 
           while read -r URL; do
             echo "Fetching $URL" >&2
-            curl -s "$URL" >> combined.m3u
+            curl -sL "$URL" >> combined.m3u
           done < sources.txt
 
       - name: Commit merged playlist
