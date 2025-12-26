@@ -13,32 +13,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Verify input files
-        shell: bash
+      - name: Validate files
         run: |
-          test -f sources.txt || { echo "sources.txt missing"; exit 1; }
-          test -f groups.txt || { echo "groups.txt missing"; exit 1; }
+          test -f sources.txt || (echo "sources.txt missing" && exit 1)
+          test -f groups.txt || (echo "groups.txt missing" && exit 1)
 
-      - name: Merge playlists
-        shell: bash
+      - name: Merge playlists (safe mode)
         run: |
-          set -e
           echo "#EXTM3U" > combined.m3u
 
-          GROUPS=$(paste -sd "|" groups.txt)
-
-          while IFS= read -r url; do
-            echo "Fetching $url"
-            curl -s "$url" | awk -v groups="$GROUPS" '
-              /^#EXTINF/ {
-                keep = ($0 ~ "group-title=\"(" groups ")\"")
-              }
-              keep { print }
-            ' >> combined.m3u
+          while read -r URL; do
+            echo "Fetching $URL"
+            curl -s "$URL" | grep -E -B1 -f groups.txt >> combined.m3u
           done < sources.txt
 
       - name: Commit result
-        shell: bash
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
