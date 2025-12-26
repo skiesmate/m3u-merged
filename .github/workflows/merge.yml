@@ -1,4 +1,24 @@
-- name: Merge playlists
+name: Merge & Filter IPTV Playlists
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 * * * *"
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate required files
+        run: |
+          test -f sources.txt || (echo "sources.txt missing" && exit 1)
+          test -f groups.txt || (echo "groups.txt missing" && exit 1)
+
+      - name: Merge playlists
         run: |
           echo "#EXTM3U" > combined.m3u
           GROUPS=$(paste -sd "|" groups.txt)
@@ -13,3 +33,11 @@
               keep { print }
             ' >> combined.m3u
           done < sources.txt
+
+      - name: Commit result
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add combined.m3u
+          git commit -m "Auto update playlist" || echo "No changes"
+          git push
