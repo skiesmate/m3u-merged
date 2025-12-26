@@ -10,10 +10,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Validate files
+      - name: Validate input files
         run: |
           test -f sources.txt || (echo "sources.txt missing" && exit 1)
           test -f groups.txt || (echo "groups.txt missing" && exit 1)
@@ -23,11 +23,11 @@ jobs:
           echo "#EXTM3U" > combined.m3u
 
           while read -r URL; do
-            echo "Fetching $URL"
-            curl -s "$URL" | grep -E -f groups.txt || true
-          done < sources.txt >> combined.m3u
+            echo "Fetching $URL" >&2
+            curl -s "$URL" | grep -E -f groups.txt >> combined.m3u
+          done < sources.txt
 
-      - name: Commit result
+      - name: Commit updated playlist
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
