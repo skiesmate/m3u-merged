@@ -1,9 +1,9 @@
 name: Merge & Filter IPTV Playlists
 
 on:
+  workflow_dispatch:
   schedule:
     - cron: "0 * * * *"
-  workflow_dispatch:
 
 jobs:
   merge:
@@ -13,16 +13,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Merge playlists with filters
+      - name: Validate files
+        run: |
+          test -f sources.txt || { echo "sources.txt missing"; exit 1; }
+          test -f groups.txt || { echo "groups.txt missing"; exit 1; }
+
+      - name: Merge playlists
         run: |
           echo "#EXTM3U" > combined.m3u
-
           GROUPS=$(paste -sd "|" groups.txt)
 
-          while read url; do
+          while read -r url; do
             echo "Fetching $url"
-            curl -Ls "$url" | \
-            awk -v groups="$GROUPS" '
+            curl -s "$url" | awk -v groups="$GROUPS" '
               BEGIN { keep=0 }
               /^#EXTINF/ {
                 keep = ($0 ~ "group-title=\"(" groups ")\"")
@@ -31,12 +34,7 @@ jobs:
             ' >> combined.m3u
           done < sources.txt
 
-      - name: Remove duplicate streams
-        run: |
-          awk '!seen[$0]++' combined.m3u > clean.m3u
-          mv clean.m3u combined.m3u
-
-      - name: Commit updates
+      - name: Commit results
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
